@@ -1,3 +1,7 @@
+p0f-cli/p0f-cli
+*.swp
+*.swo
+
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a

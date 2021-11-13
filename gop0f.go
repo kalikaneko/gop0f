@@ -1,15 +1,15 @@
 package gop0f
 
 import (
+	//	"bytes"
+	//	"encoding/binary"
+	//	"encoding/hex"
 	"bytes"
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
-	"log"
+	"io"
 	"net"
 )
 
-// Ported from p0f/api.h
 const (
 	P0F_STATUS_BADQUERY = 0x00
 	P0F_STATUS_OK       = 0x10
@@ -22,19 +22,13 @@ const (
 )
 
 var (
-	P0F_QUERY_MAGIC = [...]byte{0x50, 0x30, 0x46, 0x1} //0x50304601
-	P0F_RESP_MAGIC  = [...]byte{0x50, 0x30, 0x46, 0x2} //0x50304602
+	P0F_QUERY_MAGIC = []byte{0x01, 0x46, 0x30, 0x50} // 0x50304601
+	P0F_RESP_MAGIC  = []byte{0x02, 0x46, 0x30, 0x50} //0x50304602
 )
 
 type GoP0f struct {
 	conn   net.Conn
 	socket string
-}
-
-type P0fQuery struct {
-	Magic    [4]byte  // Must be P0F_QUERY_MAGIC
-	AddrType byte     // P0F_ADDR_*
-	Addr     [16]byte // IP address (big endian left align)
 }
 
 type P0fResponse struct {
@@ -59,17 +53,13 @@ type P0fResponse struct {
 }
 
 func New(sock string) (p0f *GoP0f, err error) {
-	by, _ := hex.DecodeString("0x50304601")
-	fmt.Printf("%+v\n", by)
 	p0f = &GoP0f{
 		socket: sock,
 	}
-	//TODO: Check file before exists
 	p0f.conn, err = net.Dial("unix", p0f.socket)
 	if err != nil {
 		return
 	}
-
 	return
 }
 
@@ -78,74 +68,40 @@ func (p0f *GoP0f) Close() {
 }
 
 func (p0f *GoP0f) Query(addr net.IP) (resp P0fResponse, err error) {
-	var querybuf bytes.Buffer
-	binary.Write(&querybuf, binary.BigEndian, newP0fQuery(addr))
+	// Query = 21 bytes
+	// Magic + 4 (ipv4) + ipaddr bytes + padding
+	ip := []byte(addr)[len(addr)-4 : len(addr)]
+	query := P0F_QUERY_MAGIC
+	query = append(query[:], []byte{4}...)
+	query = append(query[:], ip...)
+	query = append(query[:], bytes.Repeat([]byte{0}, 12)...)
+	fmt.Println(query)
 
-	qq := querybuf.Bytes()
-
-	fmt.Printf("%+v\n", qq)
-	_, err = p0f.conn.Write(qq)
+	_, err = p0f.conn.Write(query)
 	if err != nil {
 		return
 	}
 
-	var n int
-	readbuf := make([]byte, 1048)
-	n, err = p0f.conn.Read(readbuf[:])
+	r := P0fResponse{}
+
+	data := make([]byte, 1024)
+	zeroes := 0
+	n, err := p0f.conn.Read(data[:])
+	fmt.Printf("Got %d bytes\n", n)
 	if err != nil {
-		return
+		if err != io.EOF {
+			fmt.Println(err)
+			return r, err
+		}
 	}
-	fmt.Printf("Client got: %+v", readbuf[0:n])
-	buf := bytes.NewReader(readbuf[0:n])
-	err = binary.Read(buf, binary.BigEndian, &resp)
-	if err != nil {
-		log.Fatal(err)
+	data = data[:n]
+	fmt.Println(data)
+	for _, b := range data {
+		if b != 0 {
+			//fmt.Printf("%v\n", b)
+		} else {
+			zeroes++
+		}
 	}
-	log.Printf("%#v\n", resp)
-	return
+	return r, nil
 }
-
-func newP0fQuery(addr net.IP) *P0fQuery {
-	q := &P0fQuery{
-		Magic:    P0F_QUERY_MAGIC,
-		AddrType: P0F_ADDR_IPV4,
-	}
-	copy(q.Addr[:], []byte(addr)[:16])
-	return q
-}
-
-/*
-func reader(r io.Reader) {
-    buf := make([]byte, 1024)
-    for {
-      n, err := r.Read(buf[:])
-      if err != nil {
-          return
-      }
-      println("Client got:", string(buf[0:n]))
-      var header Head
-      err = binary.Read(file, binary.LittleEndian, &header)
-      if err != nil {
-          log.Fatal(err)
-      }
-      log.Printf("%#v\n", header)
-    }
-}
-
-func Run() {
-    c, err := net.Dial("unix", "/tmp/echo.sock")
-    if err != nil {
-        panic(err)
-    }
-    defer c.Close()
-
-    go reader(c)
-    for {
-        _, err := c.Write([]byte("hi"))
-        if err != nil {
-            log.Fatal("write error:", err)
-            break
-        }
-        time.Sleep(1e9)
-    }
-}*/

@@ -2,9 +2,10 @@
 package main
 
 import (
+	"0xacab.org/kali/gop0f"
+
 	"flag"
 	"fmt"
-	"github.com/gurre/gop0f"
 	"net"
 	"os"
 )
@@ -34,10 +35,13 @@ func main() {
 		panic("Not valid ip")
 	}
 
-	resp, err := p0fclient.Query(ip)
+	// resp
+	_, err = p0fclient.Query(ip)
 	if err != nil {
+		fmt.Printf("Error on query!")
 		panic(err)
 	}
-	fmt.Println(resp)
+
+	//fmt.Println(resp)
 
 }
