@@ -1,3 +1,3 @@
-module 0xacab.org/kali/gop0f
+module github.com/kalikaneko/gop0f
 
 go 1.16
