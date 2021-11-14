@@ -1,10 +1,8 @@
 # Gop0f - Client library for p0f passive fingerprinting
 
-Work in progress! Not passing.
-
 ## Installing
 ```
-go get github.com/gurre/gop0f
+go get github.com/kalikaneko/gop0f
 ```
 
 ## Using
@@ -12,7 +10,7 @@ go get github.com/gurre/gop0f
 Using the library in your service:
 ```
 import (
-  "github.com/gurre/gop0f"
+  "github.com/kalikaneko/gop0f"
   "net"
 )
 
