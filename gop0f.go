@@ -115,7 +115,7 @@ func (p0f *GoP0f) Close() {
 	p0f.conn.Close()
 }
 
-func (p0f *GoP0f) Query(addr net.IP) (resp p0fResponse, err error) {
+func (p0f *GoP0f) Query(addr net.IP) (info IPInfo, err error) {
 	// Query = 21 bytes
 	// Magic + 4 (ipv4) + ipaddr bytes + padding
 	ip := []byte(addr)[len(addr)-4 : len(addr)]
@@ -135,7 +135,7 @@ func (p0f *GoP0f) Query(addr net.IP) (resp p0fResponse, err error) {
 	if err != nil {
 		if err != io.EOF {
 			fmt.Println(err)
-			return r, err
+			return IPInfo{}, err
 		}
 	}
 	data = data[:n]
@@ -144,15 +144,11 @@ func (p0f *GoP0f) Query(addr net.IP) (resp p0fResponse, err error) {
 	if err != nil {
 		log.Fatalf("binary.Read failed: %v", err)
 	}
-
-	//fmt.Printf("out = %#v\n", r)
-
-	info, err := NewInfo(r)
+	info, err = NewInfo(r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	}
-	fmt.Println(info)
-	return r, nil
+	return info, nil
 }
 
 func toString(ba [32]byte) string {

@@ -2,7 +2,7 @@
 package main
 
 import (
-	"0xacab.org/kali/gop0f"
+	"github.com/kalikaneko/gop0f"
 
 	"flag"
 	"fmt"
