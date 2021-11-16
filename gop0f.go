@@ -116,6 +116,9 @@ func (p0f *GoP0f) Close() {
 }
 
 func (p0f *GoP0f) Query(addr net.IP) (info IPInfo, err error) {
+	if len(addr) < 4 {
+		return IPInfo{}, nil
+	}
 	// Query = 21 bytes
 	// Magic + 4 (ipv4) + ipaddr bytes + padding
 	ip := []byte(addr)[len(addr)-4 : len(addr)]
